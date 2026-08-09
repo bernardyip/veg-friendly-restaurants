@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#2f7d32">
 <title>Food Picker</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='0.9em' font-size='90'%3E🍖%3C/text%3E%3C/svg%3E">
 <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
 <style>
   :root {
@@ -82,7 +83,48 @@
   .field { margin-bottom: 14px; }
   .field:last-of-type { margin-bottom: 16px; }
 
-  select, input[type="number"] {
+  .label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .label-row label { margin: 0; }
+  .mini-btns { display: flex; gap: 8px; }
+  .mini-btn {
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: transparent;
+    color: var(--green-dark);
+    cursor: pointer;
+  }
+  .mini-btn:active { background: var(--green-soft); }
+
+  .area-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 2px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 15px;
+    margin: 0;
+  }
+  .area-row:last-child { border-bottom: none; }
+  .area-row input[type="checkbox"] {
+    width: 20px; height: 20px;
+    accent-color: var(--green);
+    flex-shrink: 0;
+    margin: 0;
+  }
+  .area-row .area-count { margin-left: auto; color: var(--muted); font-size: 13px; }
+
+  input[type="number"] {
     width: 100%;
     height: 52px;
     padding: 0 14px;
@@ -92,14 +134,6 @@
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 10px;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-  select {
-    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7463' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 14px center;
-    padding-right: 38px;
   }
   input[type="number"]::-webkit-inner-spin-button { opacity: 1; }
 
@@ -149,15 +183,26 @@
   .pick-note { color: var(--muted); font-size: 13px; font-style: italic; }
 
   /* Full list */
-  .mall h3 {
-    font-size: 15px;
-    margin: 20px 0 6px;
+  .area-group h3 {
+    font-size: 17px;
+    font-weight: 700;
     color: var(--green-dark);
+    margin: 20px 0 2px;
     display: flex;
     justify-content: space-between;
     gap: 8px;
   }
-  .mall:first-child h3 { margin-top: 0; }
+  .area-group:first-child h3 { margin-top: 0; }
+  .area-group h3 .count { color: var(--muted); font-weight: 500; }
+  .mall h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    margin: 16px 0 4px;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
   .mall .mall-count { font-weight: 500; color: var(--muted); }
   .mall ul { list-style: none; margin: 0; padding: 0; }
   .mall li {
@@ -184,6 +229,16 @@
   #status { color: var(--muted); font-size: 14px; }
   #status.error { color: var(--danger); }
   #status code { font-size: 13px; }
+
+  .sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
 
   footer {
     color: var(--muted);
@@ -215,8 +270,14 @@
   <main>
     <section class="card" aria-label="Controls">
       <div class="field">
-        <label for="area">Area</label>
-        <select id="area" disabled></select>
+        <div class="label-row">
+          <label id="areas-label">Areas</label>
+          <div class="mini-btns">
+            <button type="button" class="mini-btn" id="select-all">Select all</button>
+            <button type="button" class="mini-btn" id="deselect-all">Deselect all</button>
+          </div>
+        </div>
+        <div id="area-list" aria-labelledby="areas-label"></div>
       </div>
       <div class="row">
         <div class="field">
@@ -229,10 +290,10 @@
         </div>
       </div>
       <button id="pick" disabled>🎲 Pick for me</button>
-      <p class="hint" id="pick-note" hidden></p>
     </section>
 
     <p id="status" role="status" aria-live="polite"></p>
+    <p class="sr-only" id="announce" role="status" aria-live="polite"></p>
 
     <section class="card" id="picks" aria-labelledby="picks-title" hidden>
       <h2 id="picks-title">Your picks</h2>
@@ -240,7 +301,7 @@
     </section>
 
     <section class="card" id="list" aria-labelledby="list-title" hidden>
-      <h2 id="list-title">All restaurants in this area</h2>
+      <h2 id="list-title">All restaurants in selected areas</h2>
       <div id="list-body"></div>
     </section>
   </main>
@@ -310,32 +371,64 @@
     return picks;
   }
 
+  function byName(a, b) {
+    return a.name < b.name ? -1 : a.name > b.name ? 1 : 0;
+  }
+
   /* ---------- Browser only ---------- */
 
   function init() {
-    var areaEl = document.getElementById('area');
     var countEl = document.getElementById('count');
     var pickBtn = document.getElementById('pick');
     var statusEl = document.getElementById('status');
+    var announceEl = document.getElementById('announce');
     var picksCard = document.getElementById('picks');
     var picksList = document.getElementById('picks-list');
     var listCard = document.getElementById('list');
     var listBody = document.getElementById('list-body');
     var updatedEl = document.getElementById('updated');
     var availableEl = document.getElementById('available');
-    var pickNoteEl = document.getElementById('pick-note');
+    var areaListEl = document.getElementById('area-list');
+    var selectAllBtn = document.getElementById('select-all');
+    var deselectAllBtn = document.getElementById('deselect-all');
 
-    var state = { data: null, area: null, picks: [] };
+    var state = { data: null, selected: {}, picks: [] };
     var reducedMotion = window.matchMedia &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     var STORAGE_KEY = 'vfr:picker';
 
+    function sortedAreas() {
+      return state.data.areas.slice().sort(byName);
+    }
+
+    function selectedTotal() {
+      var total = 0;
+      state.data.areas.forEach(function (a) {
+        if (state.selected[a.name]) total += a.count;
+      });
+      return total;
+    }
+
+    function allSelectedItems() {
+      var items = [];
+      state.data.areas.forEach(function (area) {
+        if (!state.selected[area.name]) return;
+        area.malls.forEach(function (mall) {
+          mall.items.forEach(function (item) {
+            items.push({ area: area.name, mall: mall.name, item: item });
+          });
+        });
+      });
+      return items;
+    }
+
     function saveSettings() {
-      if (!state.area) return;
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          area: state.area.name,
+          areas: sortedAreas()
+            .filter(function (a) { return state.selected[a.name]; })
+            .map(function (a) { return a.name; }),
           count: parseInt(countEl.value, 10) || 1
         }));
       } catch (e) { /* storage disabled (private mode etc.): ignore */ }
@@ -346,12 +439,11 @@
       try {
         saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
       } catch (e) { saved = null; }
-      if (saved && typeof saved.area === 'string') {
-        if (typeof saved.count === 'number' && saved.count >= 1) {
-          countEl.value = String(saved.count);
-        }
-        return saved.area;
+      if (saved && typeof saved.count === 'number' && saved.count >= 1) {
+        countEl.value = String(saved.count);
       }
+      if (saved && Array.isArray(saved.areas)) return saved.areas.slice();
+      if (saved && typeof saved.area === 'string') return [saved.area]; /* legacy */
       return null;
     }
 
@@ -366,11 +458,26 @@
       return div.innerHTML;
     }
 
-    function mallNameOf(item, area) {
-      for (var i = 0; i < area.malls.length; i++) {
-        if (area.malls[i].items.indexOf(item) !== -1) return area.malls[i].name;
+    function updateHash() {
+      try {
+        var names = sortedAreas()
+          .filter(function (a) { return state.selected[a.name]; })
+          .map(function (a) { return encodeURIComponent(a.name); });
+        history.replaceState(null, '', '#' + names.join(','));
+      } catch (e) { /* file:// or privacy mode: ignore */ }
+    }
+
+    function setSelected(names) {
+      if (!names) {
+        state.selected = {};
+        state.data.areas.forEach(function (a) { state.selected[a.name] = true; });
+        return;
       }
-      return '';
+      state.selected = {};
+      names.forEach(function (name) {
+        var valid = state.data.areas.some(function (a) { return a.name === name; });
+        if (valid) state.selected[name] = true;
+      });
     }
 
     function renderPicks() {
@@ -380,18 +487,18 @@
         return;
       }
       picksCard.hidden = false;
-      state.picks.forEach(function (item, idx) {
+      state.picks.forEach(function (p, idx) {
         var row = document.createElement('div');
         row.className = 'pick-row';
         row.style.animationDelay = (idx * 60) + 'ms';
-        var sub = mallNameOf(item, state.area) +
-          (item.unit ? ' · ' + item.unit : '');
+        var sub = p.area + ' · ' + p.mall +
+          (p.item.unit ? ' · ' + p.item.unit : '');
         row.innerHTML =
           '<div class="pick-rank">' + (idx + 1) + '</div>' +
           '<div class="pick-info">' +
-            '<div class="pick-name">' + esc(item.name) + '</div>' +
+            '<div class="pick-name">' + esc(p.item.name) + '</div>' +
             '<div class="pick-sub">' + esc(sub) + '</div>' +
-            (item.note ? '<div class="pick-note">' + esc(item.note) + '</div>' : '') +
+            (p.item.note ? '<div class="pick-note">' + esc(p.item.note) + '</div>' : '') +
           '</div>';
         picksList.appendChild(row);
       });
@@ -400,50 +507,72 @@
     function renderList() {
       listCard.hidden = false;
       listBody.innerHTML = '';
-      state.area.malls.forEach(function (mall) {
-        var group = document.createElement('div');
-        group.className = 'mall';
+      sortedAreas().forEach(function (area) {
+        if (!state.selected[area.name]) return;
+        var areaGroup = document.createElement('div');
+        areaGroup.className = 'area-group';
         var h3 = document.createElement('h3');
-        h3.innerHTML = esc(mall.name) +
-          '<span class="mall-count">' + mall.items.length + '</span>';
-        var ul = document.createElement('ul');
-        mall.items.forEach(function (item) {
-          var li = document.createElement('li');
-          var picked = state.picks.indexOf(item) !== -1;
-          if (picked) li.className = 'picked';
-          li.innerHTML =
-            '<span class="name">' + (picked ? '🎲 ' : '') + esc(item.name) + '</span>' +
-            '<span class="unit">' + esc(item.unit) + '</span>';
-          ul.appendChild(li);
+        h3.innerHTML = esc(area.name) +
+          '<span class="count">' + area.count + '</span>';
+        areaGroup.appendChild(h3);
+        area.malls.forEach(function (mall) {
+          var group = document.createElement('div');
+          group.className = 'mall';
+          var h4 = document.createElement('h4');
+          h4.innerHTML = esc(mall.name) +
+            '<span class="mall-count">' + mall.items.length + '</span>';
+          var ul = document.createElement('ul');
+          mall.items.forEach(function (item) {
+            var li = document.createElement('li');
+            var picked = state.picks.some(function (p) {
+              return p.area === area.name && p.item === item;
+            });
+            if (picked) li.className = 'picked';
+            li.innerHTML =
+              '<span class="name">' + (picked ? '🎲 ' : '') + esc(item.name) + '</span>' +
+              '<span class="unit">' + esc(item.unit) + '</span>';
+            ul.appendChild(li);
+          });
+          group.appendChild(h4);
+          group.appendChild(ul);
+          areaGroup.appendChild(group);
         });
-        group.appendChild(h3);
-        group.appendChild(ul);
-        listBody.appendChild(group);
+        listBody.appendChild(areaGroup);
       });
     }
 
-    function renderArea() {
-      var area = state.area;
-      countEl.max = String(area.count);
-      if (parseInt(countEl.value, 10) > area.count) countEl.value = String(area.count);
-      availableEl.textContent = area.count + ' available';
-      var n = Math.min(parseInt(countEl.value, 10) || 1, area.count);
-      pickNoteEl.hidden = false;
-      pickNoteEl.textContent = 'Picking ' + n + ' of ' + area.count + ' restaurants';
+    function renderAreaList() {
+      var total = selectedTotal();
+      availableEl.textContent = total + ' available';
+      countEl.max = String(Math.max(total, 1));
+      if (parseInt(countEl.value, 10) > total) countEl.value = String(total);
+      pickBtn.disabled = total === 0;
+      areaListEl.innerHTML = '';
+      sortedAreas().forEach(function (a) {
+        var label = document.createElement('label');
+        label.className = 'area-row';
+        label.innerHTML =
+          '<input type="checkbox" value="' + esc(a.name) + '"' +
+          (state.selected[a.name] ? ' checked' : '') + '>' +
+          '<span class="area-name">' + esc(a.name) + '</span>' +
+          '<span class="area-count">' + a.count + '</span>';
+        areaListEl.appendChild(label);
+      });
       state.picks = [];
       renderPicks();
       renderList();
     }
 
     function doPick() {
+      var items = allSelectedItems();
+      if (!items.length) return;
       var n = parseInt(countEl.value, 10);
       if (isNaN(n) || n < 1) n = 1;
-      var items = allItems(state.area);
       state.picks = pickRandom(items, n);
       renderPicks();
       renderList();
-      var names = state.picks.map(function (p) { return p.name; }).join(', ');
-      setStatus('Picked ' + state.picks.length + ' of ' + items.length + ': ' + names);
+      var names = state.picks.map(function (p) { return p.item.name; }).join(', ');
+      announceEl.textContent = 'Picked ' + state.picks.length + ' of ' + items.length + ': ' + names;
       if (!reducedMotion && picksCard.hidden === false) {
         picksCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       } else if (picksCard.hidden === false) {
@@ -451,39 +580,23 @@
       }
     }
 
-    function selectArea(name) {
-      var found = null;
-      state.data.areas.forEach(function (a) {
-        if (a.name === name) found = a;
-      });
-      if (!found) return false;
-      state.area = found;
-      areaEl.value = found.name;
-      renderArea();
-      try {
-        history.replaceState(null, '', '#' + encodeURIComponent(found.name));
-      } catch (e) { /* file:// or privacy mode: ignore */ }
-      return true;
-    }
-
     function populate() {
-      var options = state.data.areas.map(function (a) {
-        return '<option value="' + esc(a.name) + '">' + esc(a.name) + ' (' + a.count + ')</option>';
-      });
-      areaEl.innerHTML = options.join('');
-      areaEl.disabled = false;
-      pickBtn.disabled = false;
       updatedEl.textContent = state.data.updated || '–';
+      pickBtn.disabled = false;
 
-      var savedArea = restoreSettings();
-      var initial = '';
+      var saved = restoreSettings();
+      var initial = null;
       try {
-        initial = decodeURIComponent(window.location.hash.slice(1));
-      } catch (e) { initial = ''; }
-      if (!initial && savedArea) initial = savedArea;
-      if (!selectArea(initial || state.data.areas[0].name)) {
-        selectArea(state.data.areas[0].name);
-      }
+        var h = decodeURIComponent(window.location.hash.slice(1));
+        if (h) {
+          initial = h.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+        }
+      } catch (e) { initial = null; }
+      var chosen = initial !== null ? initial : saved;
+      setSelected(chosen);
+      renderAreaList();
+      saveSettings();
+      updateHash();
     }
 
     function load() {
@@ -508,17 +621,36 @@
         });
     }
 
-    areaEl.addEventListener('change', function () {
-      selectArea(areaEl.value);
+    areaListEl.addEventListener('change', function (e) {
+      var input = e.target;
+      if (input && input.type === 'checkbox') {
+        state.selected[input.value] = input.checked;
+        renderAreaList();
+        updateHash();
+        saveSettings();
+        setStatus('');
+      }
+    });
+    selectAllBtn.addEventListener('click', function () {
+      state.data.areas.forEach(function (a) { state.selected[a.name] = true; });
+      renderAreaList();
+      updateHash();
+      saveSettings();
+      setStatus('');
+    });
+    deselectAllBtn.addEventListener('click', function () {
+      state.selected = {};
+      renderAreaList();
+      updateHash();
       saveSettings();
       setStatus('');
     });
     countEl.addEventListener('change', function () {
-      if (!state.area) return;
       var n = parseInt(countEl.value, 10);
       if (isNaN(n) || n < 1) countEl.value = '1';
-      if (n > state.area.count) countEl.value = String(state.area.count);
-      renderArea();
+      var total = selectedTotal();
+      if (n > total) countEl.value = String(total);
+      renderAreaList();
       saveSettings();
     });
     pickBtn.addEventListener('click', doPick);

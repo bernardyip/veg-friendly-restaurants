@@ -124,10 +124,6 @@ areas:
         unit: "#01-16"
       - name: "IKEA Swedish Restaurant and Bistro"
         unit: "#04-20/21/22"
-      - name: "Burger King"
-        unit: "#B1-02"
-      - name: "McDonald's"
-        unit: "#01-63 & #02-55"
     "Westgate":
       - name: "Shake Shack"
         unit: "#01-20/21/22/33"
