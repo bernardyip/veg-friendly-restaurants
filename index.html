@@ -104,6 +104,35 @@
   }
   .mini-btn:active { background: var(--green-soft); }
 
+  #area-toggle {
+    width: 100%;
+    height: 52px;
+    padding: 0 14px;
+    font: inherit;
+    font-size: 16px; /* 16px prevents iOS zoom-on-focus */
+    color: var(--text);
+    text-align: left;
+    background-color: var(--card);
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7463' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 38px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  #area-toggle[aria-expanded="true"] { border-radius: 10px 10px 0 0; }
+  .area-panel {
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    margin-top: -1px;
+    padding: 2px 14px 10px;
+    max-height: 45vh;
+    overflow-y: auto;
+    background: var(--card);
+  }
+
   .area-row {
     display: flex;
     align-items: center;
@@ -277,7 +306,8 @@
             <button type="button" class="mini-btn" id="deselect-all">Deselect all</button>
           </div>
         </div>
-        <div id="area-list" aria-labelledby="areas-label"></div>
+        <button type="button" id="area-toggle" aria-haspopup="listbox" aria-expanded="false" aria-controls="area-panel">Areas</button>
+        <div id="area-panel" class="area-panel" aria-labelledby="areas-label" hidden></div>
       </div>
       <div class="row">
         <div class="field">
@@ -388,7 +418,8 @@
     var listBody = document.getElementById('list-body');
     var updatedEl = document.getElementById('updated');
     var availableEl = document.getElementById('available');
-    var areaListEl = document.getElementById('area-list');
+    var areaToggleEl = document.getElementById('area-toggle');
+    var areaPanelEl = document.getElementById('area-panel');
     var selectAllBtn = document.getElementById('select-all');
     var deselectAllBtn = document.getElementById('deselect-all');
 
@@ -456,6 +487,23 @@
       var div = document.createElement('div');
       div.textContent = s;
       return div.innerHTML;
+    }
+
+    function updateToggle() {
+      var total = state.data.areas.length;
+      var sel = sortedAreas().filter(function (a) { return state.selected[a.name]; }).length;
+      areaToggleEl.textContent = sel === total ? 'All areas' : sel + ' of ' + total + ' areas';
+    }
+
+    function togglePanel() {
+      var open = areaToggleEl.getAttribute('aria-expanded') === 'true';
+      areaToggleEl.setAttribute('aria-expanded', String(!open));
+      areaPanelEl.hidden = open;
+    }
+
+    function closePanel() {
+      areaToggleEl.setAttribute('aria-expanded', 'false');
+      areaPanelEl.hidden = true;
     }
 
     function updateHash() {
@@ -547,7 +595,8 @@
       countEl.max = String(Math.max(total, 1));
       if (parseInt(countEl.value, 10) > total) countEl.value = String(total);
       pickBtn.disabled = total === 0;
-      areaListEl.innerHTML = '';
+      updateToggle();
+      areaPanelEl.innerHTML = '';
       sortedAreas().forEach(function (a) {
         var label = document.createElement('label');
         label.className = 'area-row';
@@ -556,7 +605,7 @@
           (state.selected[a.name] ? ' checked' : '') + '>' +
           '<span class="area-name">' + esc(a.name) + '</span>' +
           '<span class="area-count">' + a.count + '</span>';
-        areaListEl.appendChild(label);
+        areaPanelEl.appendChild(label);
       });
       state.picks = [];
       renderPicks();
@@ -621,7 +670,7 @@
         });
     }
 
-    areaListEl.addEventListener('change', function (e) {
+    areaPanelEl.addEventListener('change', function (e) {
       var input = e.target;
       if (input && input.type === 'checkbox') {
         state.selected[input.value] = input.checked;
@@ -654,6 +703,14 @@
       saveSettings();
     });
     pickBtn.addEventListener('click', doPick);
+
+    areaToggleEl.addEventListener('click', togglePanel);
+    document.addEventListener('click', function (e) {
+      if (areaPanelEl.hidden) return;
+      if (e.target === areaToggleEl) return;
+      if (areaPanelEl.contains && areaPanelEl.contains(e.target)) return;
+      closePanel();
+    });
 
     load();
   }
