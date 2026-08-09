@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#2f7d32">
-<title>Veg-Friendly Restaurant Picker</title>
+<title>Food Picker</title>
 <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
 <style>
   :root {
@@ -58,7 +58,6 @@
     margin: 4px 0 4px;
     letter-spacing: -0.02em;
   }
-  .tagline { margin: 0; color: var(--muted); font-size: 14px; }
 
   .card {
     background: var(--card);
@@ -210,8 +209,7 @@
 </head>
 <body>
   <header>
-    <h1>🥦 Veg-Friendly Restaurant Picker</h1>
-    <p class="tagline" id="tagline">Loading restaurant data…</p>
+    <h1>🥦 Food Picker 🍖</h1>
   </header>
 
   <main>
@@ -323,7 +321,6 @@
     var picksList = document.getElementById('picks-list');
     var listCard = document.getElementById('list');
     var listBody = document.getElementById('list-body');
-    var taglineEl = document.getElementById('tagline');
     var updatedEl = document.getElementById('updated');
     var availableEl = document.getElementById('available');
     var pickNoteEl = document.getElementById('pick-note');
@@ -331,6 +328,32 @@
     var state = { data: null, area: null, picks: [] };
     var reducedMotion = window.matchMedia &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    var STORAGE_KEY = 'vfr:picker';
+
+    function saveSettings() {
+      if (!state.area) return;
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          area: state.area.name,
+          count: parseInt(countEl.value, 10) || 1
+        }));
+      } catch (e) { /* storage disabled (private mode etc.): ignore */ }
+    }
+
+    function restoreSettings() {
+      var saved = null;
+      try {
+        saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+      } catch (e) { saved = null; }
+      if (saved && typeof saved.area === 'string') {
+        if (typeof saved.count === 'number' && saved.count >= 1) {
+          countEl.value = String(saved.count);
+        }
+        return saved.area;
+      }
+      return null;
+    }
 
     function setStatus(msg, isError) {
       statusEl.textContent = msg || '';
@@ -451,12 +474,13 @@
       areaEl.disabled = false;
       pickBtn.disabled = false;
       updatedEl.textContent = state.data.updated || '–';
-      if (state.data.note) taglineEl.textContent = state.data.note;
 
+      var savedArea = restoreSettings();
       var initial = '';
       try {
         initial = decodeURIComponent(window.location.hash.slice(1));
       } catch (e) { initial = ''; }
+      if (!initial && savedArea) initial = savedArea;
       if (!selectArea(initial || state.data.areas[0].name)) {
         selectArea(state.data.areas[0].name);
       }
@@ -486,6 +510,7 @@
 
     areaEl.addEventListener('change', function () {
       selectArea(areaEl.value);
+      saveSettings();
       setStatus('');
     });
     countEl.addEventListener('change', function () {
@@ -494,6 +519,7 @@
       if (isNaN(n) || n < 1) countEl.value = '1';
       if (n > state.area.count) countEl.value = String(state.area.count);
       renderArea();
+      saveSettings();
     });
     pickBtn.addEventListener('click', doPick);
 
