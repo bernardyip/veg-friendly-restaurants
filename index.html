@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2f7d32">
+<title>Veg-Friendly Restaurant Picker</title>
+<script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+<style>
+  :root {
+    --bg: #f4f6f1;
+    --card: #ffffff;
+    --text: #21281f;
+    --muted: #6b7463;
+    --green: #2f7d32;
+    --green-dark: #256329;
+    --green-soft: #e6f2e5;
+    --border: #dde4d7;
+    --danger: #b3261e;
+    --shadow: 0 1px 3px rgba(33, 40, 31, 0.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1117;
+      --card: #161b22;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --green: #3fb950;
+      --green-dark: #3fb950;
+      --green-soft: #1c2a20;
+      --border: #30363d;
+      --danger: #f85149;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.45;
+    padding:
+      calc(16px + env(safe-area-inset-top))
+      calc(16px + env(safe-area-inset-right))
+      calc(24px + env(safe-area-inset-bottom))
+      calc(16px + env(safe-area-inset-left));
+  }
+
+  header, main, footer { max-width: 640px; margin: 0 auto; }
+
+  header { margin-bottom: 16px; }
+  h1 {
+    font-size: 24px;
+    margin: 4px 0 4px;
+    letter-spacing: -0.02em;
+  }
+  .tagline { margin: 0; color: var(--muted); font-size: 14px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+  }
+
+  .card h2 {
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin: 0 0 12px;
+  }
+
+  label { display: block; font-size: 14px; font-weight: 600; margin: 0 0 6px; }
+
+  /* Controls */
+  .field { margin-bottom: 14px; }
+  .field:last-of-type { margin-bottom: 16px; }
+
+  select, input[type="number"] {
+    width: 100%;
+    height: 52px;
+    padding: 0 14px;
+    font: inherit;
+    font-size: 16px; /* 16px prevents iOS zoom-on-focus */
+    color: var(--text);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  select {
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7463' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 38px;
+  }
+  input[type="number"]::-webkit-inner-spin-button { opacity: 1; }
+
+  .row { display: flex; gap: 12px; align-items: flex-end; }
+  .row .field { flex: 1; margin-bottom: 16px; }
+
+  .hint { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+
+  button#pick {
+    width: 100%;
+    min-height: 54px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #43a047, #2f7d32);
+    color: #fff;
+    font: inherit;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.06s ease, opacity 0.2s ease;
+  }
+  button#pick:active { transform: scale(0.98); }
+  button#pick:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  /* Picks */
+  #picks .pick-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+    animation: fadeUp 0.25s ease both;
+  }
+  .pick-rank {
+    width: 32px; height: 32px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: var(--green-soft);
+    color: var(--green-dark);
+    font-weight: 700;
+    font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pick-info { min-width: 0; }
+  .pick-name { font-weight: 600; word-wrap: break-word; }
+  .pick-sub { color: var(--muted); font-size: 14px; }
+  .pick-note { color: var(--muted); font-size: 13px; font-style: italic; }
+
+  /* Full list */
+  .mall h3 {
+    font-size: 15px;
+    margin: 20px 0 6px;
+    color: var(--green-dark);
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .mall:first-child h3 { margin-top: 0; }
+  .mall .mall-count { font-weight: 500; color: var(--muted); }
+  .mall ul { list-style: none; margin: 0; padding: 0; }
+  .mall li {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    padding: 11px 2px;
+    border-bottom: 1px solid var(--border);
+    font-size: 15px;
+  }
+  .mall .unit { color: var(--muted); font-size: 13px; flex-shrink: 0; }
+  .mall li.picked {
+    background: var(--green-soft);
+    border-bottom-color: transparent;
+    border-radius: 8px;
+    padding: 11px 10px;
+    margin: 2px 0;
+  }
+  .mall li.picked .name { color: var(--green-dark); font-weight: 700; }
+  .mall li.picked .unit { color: var(--green-dark); font-weight: 600; }
+
+  /* Status / errors */
+  #status { color: var(--muted); font-size: 14px; }
+  #status.error { color: var(--danger); }
+  #status code { font-size: 13px; }
+
+  footer {
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+    margin-top: 8px;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+
+  @media (min-width: 640px) {
+    h1 { font-size: 28px; }
+    #picks .pick-row { border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 8px; border-top-width: 1px; }
+    .row { gap: 16px; }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>🥦 Veg-Friendly Restaurant Picker</h1>
+    <p class="tagline" id="tagline">Loading restaurant data…</p>
+  </header>
+
+  <main>
+    <section class="card" aria-label="Controls">
+      <div class="field">
+        <label for="area">Area</label>
+        <select id="area" disabled></select>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="count">How many?</label>
+          <input type="number" id="count" min="1" max="10" value="3" step="1" inputmode="numeric">
+        </div>
+        <div class="field" style="flex:0 0 auto">
+          <label>&nbsp;</label>
+          <p class="hint" id="available" style="margin:0; line-height:52px;">–</p>
+        </div>
+      </div>
+      <button id="pick" disabled>🎲 Pick for me</button>
+      <p class="hint" id="pick-note" hidden></p>
+    </section>
+
+    <p id="status" role="status" aria-live="polite"></p>
+
+    <section class="card" id="picks" aria-labelledby="picks-title" hidden>
+      <h2 id="picks-title">Your picks</h2>
+      <div id="picks-list"></div>
+    </section>
+
+    <section class="card" id="list" aria-labelledby="list-title" hidden>
+      <h2 id="list-title">All restaurants in this area</h2>
+      <div id="list-body"></div>
+    </section>
+  </main>
+
+  <footer>
+    Data: <code>restaurant_map.yaml</code> · last updated <span id="updated">–</span>
+  </footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var DATA_URL = 'restaurant_map.yaml';
+
+  /* ---------- Pure logic (no DOM) ---------- */
+
+  function normalize(data) {
+    var areas = [];
+    var rawAreas = (data && data.areas) || {};
+    Object.keys(rawAreas).forEach(function (areaName) {
+      var area = { name: areaName, malls: [], count: 0 };
+      var malls = rawAreas[areaName] || {};
+      Object.keys(malls).forEach(function (mallName) {
+        var mall = { name: mallName, items: [] };
+        (malls[mallName] || []).forEach(function (item) {
+          var entry = {
+            name: String(item.name || 'Unnamed'),
+            unit: item.unit ? String(item.unit) : '',
+            note: item.note ? String(item.note) : ''
+          };
+          mall.items.push(entry);
+          area.count += 1;
+        });
+        area.malls.push(mall);
+      });
+      areas.push(area);
+    });
+    return {
+      areas: areas,
+      updated: (data && data.last_updated) ? String(data.last_updated) : '',
+      note: (data && data.note) ? String(data.note) : ''
+    };
+  }
+
+  function allItems(area) {
+    var items = [];
+    area.malls.forEach(function (mall) {
+      mall.items.forEach(function (item) {
+        items.push(item);
+      });
+    });
+    return items;
+  }
+
+  /* Fisher–Yates partial shuffle: n unique items, no replacement.
+     n is clamped to [0, items.length]. */
+  function pickRandom(items, n) {
+    var count = Math.max(0, Math.min(n, items.length));
+    var pool = items.slice();
+    var picks = [];
+    var i, j, tmp;
+    for (i = 0; i < count; i++) {
+      j = i + Math.floor(Math.random() * (pool.length - i));
+      tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
+      picks.push(pool[i]);
+    }
+    return picks;
+  }
+
+  /* ---------- Browser only ---------- */
+
+  function init() {
+    var areaEl = document.getElementById('area');
+    var countEl = document.getElementById('count');
+    var pickBtn = document.getElementById('pick');
+    var statusEl = document.getElementById('status');
+    var picksCard = document.getElementById('picks');
+    var picksList = document.getElementById('picks-list');
+    var listCard = document.getElementById('list');
+    var listBody = document.getElementById('list-body');
+    var taglineEl = document.getElementById('tagline');
+    var updatedEl = document.getElementById('updated');
+    var availableEl = document.getElementById('available');
+    var pickNoteEl = document.getElementById('pick-note');
+
+    var state = { data: null, area: null, picks: [] };
+    var reducedMotion = window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function setStatus(msg, isError) {
+      statusEl.textContent = msg || '';
+      statusEl.classList.toggle('error', !!isError);
+    }
+
+    function esc(s) {
+      var div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    function mallNameOf(item, area) {
+      for (var i = 0; i < area.malls.length; i++) {
+        if (area.malls[i].items.indexOf(item) !== -1) return area.malls[i].name;
+      }
+      return '';
+    }
+
+    function renderPicks() {
+      picksList.innerHTML = '';
+      if (!state.picks.length) {
+        picksCard.hidden = true;
+        return;
+      }
+      picksCard.hidden = false;
+      state.picks.forEach(function (item, idx) {
+        var row = document.createElement('div');
+        row.className = 'pick-row';
+        row.style.animationDelay = (idx * 60) + 'ms';
+        var sub = mallNameOf(item, state.area) +
+          (item.unit ? ' · ' + item.unit : '');
+        row.innerHTML =
+          '<div class="pick-rank">' + (idx + 1) + '</div>' +
+          '<div class="pick-info">' +
+            '<div class="pick-name">' + esc(item.name) + '</div>' +
+            '<div class="pick-sub">' + esc(sub) + '</div>' +
+            (item.note ? '<div class="pick-note">' + esc(item.note) + '</div>' : '') +
+          '</div>';
+        picksList.appendChild(row);
+      });
+    }
+
+    function renderList() {
+      listCard.hidden = false;
+      listBody.innerHTML = '';
+      state.area.malls.forEach(function (mall) {
+        var group = document.createElement('div');
+        group.className = 'mall';
+        var h3 = document.createElement('h3');
+        h3.innerHTML = esc(mall.name) +
+          '<span class="mall-count">' + mall.items.length + '</span>';
+        var ul = document.createElement('ul');
+        mall.items.forEach(function (item) {
+          var li = document.createElement('li');
+          var picked = state.picks.indexOf(item) !== -1;
+          if (picked) li.className = 'picked';
+          li.innerHTML =
+            '<span class="name">' + (picked ? '🎲 ' : '') + esc(item.name) + '</span>' +
+            '<span class="unit">' + esc(item.unit) + '</span>';
+          ul.appendChild(li);
+        });
+        group.appendChild(h3);
+        group.appendChild(ul);
+        listBody.appendChild(group);
+      });
+    }
+
+    function renderArea() {
+      var area = state.area;
+      countEl.max = String(area.count);
+      if (parseInt(countEl.value, 10) > area.count) countEl.value = String(area.count);
+      availableEl.textContent = area.count + ' available';
+      var n = Math.min(parseInt(countEl.value, 10) || 1, area.count);
+      pickNoteEl.hidden = false;
+      pickNoteEl.textContent = 'Picking ' + n + ' of ' + area.count + ' restaurants';
+      state.picks = [];
+      renderPicks();
+      renderList();
+    }
+
+    function doPick() {
+      var n = parseInt(countEl.value, 10);
+      if (isNaN(n) || n < 1) n = 1;
+      var items = allItems(state.area);
+      state.picks = pickRandom(items, n);
+      renderPicks();
+      renderList();
+      var names = state.picks.map(function (p) { return p.name; }).join(', ');
+      setStatus('Picked ' + state.picks.length + ' of ' + items.length + ': ' + names);
+      if (!reducedMotion && picksCard.hidden === false) {
+        picksCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } else if (picksCard.hidden === false) {
+        picksCard.scrollIntoView({ block: 'nearest' });
+      }
+    }
+
+    function selectArea(name) {
+      var found = null;
+      state.data.areas.forEach(function (a) {
+        if (a.name === name) found = a;
+      });
+      if (!found) return false;
+      state.area = found;
+      areaEl.value = found.name;
+      renderArea();
+      try {
+        history.replaceState(null, '', '#' + encodeURIComponent(found.name));
+      } catch (e) { /* file:// or privacy mode: ignore */ }
+      return true;
+    }
+
+    function populate() {
+      var options = state.data.areas.map(function (a) {
+        return '<option value="' + esc(a.name) + '">' + esc(a.name) + ' (' + a.count + ')</option>';
+      });
+      areaEl.innerHTML = options.join('');
+      areaEl.disabled = false;
+      pickBtn.disabled = false;
+      updatedEl.textContent = state.data.updated || '–';
+      if (state.data.note) taglineEl.textContent = state.data.note;
+
+      var initial = '';
+      try {
+        initial = decodeURIComponent(window.location.hash.slice(1));
+      } catch (e) { initial = ''; }
+      if (!selectArea(initial || state.data.areas[0].name)) {
+        selectArea(state.data.areas[0].name);
+      }
+    }
+
+    function load() {
+      fetch(DATA_URL)
+        .then(function (res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status + ' while loading ' + DATA_URL);
+          return res.text();
+        })
+        .then(function (text) {
+          if (typeof jsyaml === 'undefined') {
+            throw new Error('YAML parser (js-yaml CDN) failed to load');
+          }
+          state.data = normalize(jsyaml.load(text));
+          if (!state.data.areas.length) throw new Error('No areas found in ' + DATA_URL);
+          populate();
+          setStatus('');
+        })
+        .catch(function (err) {
+          setStatus('Couldn\u2019t load ' + DATA_URL + ': ' + err.message +
+            '. Make sure the page is served over HTTP (e.g. GitHub Pages or a local server) — ' +
+            'opening it directly from disk blocks the fetch.', true);
+        });
+    }
+
+    areaEl.addEventListener('change', function () {
+      selectArea(areaEl.value);
+      setStatus('');
+    });
+    countEl.addEventListener('change', function () {
+      if (!state.area) return;
+      var n = parseInt(countEl.value, 10);
+      if (isNaN(n) || n < 1) countEl.value = '1';
+      if (n > state.area.count) countEl.value = String(state.area.count);
+      renderArea();
+    });
+    pickBtn.addEventListener('click', doPick);
+
+    load();
+  }
+
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  }
+
+  /* Exposed for tests */
+  window.Picker = { normalize: normalize, pickRandom: pickRandom, allItems: allItems, DATA_URL: DATA_URL };
+})();
+</script>
+</body>
+</html>
