@@ -593,7 +593,6 @@
       var total = selectedTotal();
       availableEl.textContent = total + ' available';
       countEl.max = String(Math.max(total, 1));
-      if (parseInt(countEl.value, 10) > total) countEl.value = String(total);
       pickBtn.disabled = total === 0;
       updateToggle();
       areaPanelEl.innerHTML = '';
@@ -698,7 +697,7 @@
       var n = parseInt(countEl.value, 10);
       if (isNaN(n) || n < 1) countEl.value = '1';
       var total = selectedTotal();
-      if (n > total) countEl.value = String(total);
+      if (total >= 1 && n > total) countEl.value = String(total);
       renderAreaList();
       saveSettings();
     });
