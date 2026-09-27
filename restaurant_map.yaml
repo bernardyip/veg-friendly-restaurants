@@ -65,6 +65,8 @@ areas:
         unit: "#01-55"
       - name: "Senraku Pasta House"
         unit: "#03-06/06A/06B/07/07A/09 (Don Don Donki, L3)"
+      - name: "Jinjja Kitchen"
+        unit: "02-10"
     "Hillion Mall":
       - name: "Han's"
         unit: "#B2-28/29/30"
