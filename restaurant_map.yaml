@@ -1,5 +1,5 @@
 note: "Restaurant tracker for veg-friendly food (places with both meat and vegetarian options)"
-last_updated: "2026-08-10"
+last_updated: "2026-10-04"
 areas:
   "Bukit Batok":
     "West Mall":
@@ -254,3 +254,12 @@ areas:
       - name: "Hai Di Lao"
         unit: "#04-10"
         note: "Operating as Haidilao Express (takeaway) — relocated here from Bugis Junction"
+  "Tengah":
+    "Plantation Plaza":
+      - name: "The Coffee Bean & Tea Leaf"
+        unit: "#01-06"
+      - name: "McDonald's"
+        unit: "#01-403"
+    "Tengah Community Club":
+      - name: "Burger King"
+        unit: "#01-03"
