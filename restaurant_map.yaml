@@ -260,6 +260,8 @@ areas:
         unit: "#02-06"
       - name: "Swensen's"
         unit: "#01-05"
+      - name: "McDonald's"
+        unit: "#01-403"
       - name: "Brunch & Co Cafe"
         unit: "#02-18"
       - name: "My Briyani House"
