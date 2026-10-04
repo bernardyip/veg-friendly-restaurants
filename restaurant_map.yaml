@@ -1,5 +1,5 @@
 note: "Restaurant tracker for veg-friendly food (places with both meat and vegetarian options)"
-last_updated: "2026-08-10"
+last_updated: "2026-10-04"
 areas:
   "Bukit Batok":
     "West Mall":
@@ -254,3 +254,31 @@ areas:
       - name: "Hai Di Lao"
         unit: "#04-10"
         note: "Operating as Haidilao Express (takeaway) — relocated here from Bugis Junction"
+  "Tengah":
+    "Plantation Plaza":
+      - name: "NAN YANG DAO"
+        unit: "#02-06"
+      - name: "Swensen's"
+        unit: "#01-05"
+      - name: "McDonald's"
+        unit: "#01-403"
+      - name: "Brunch & Co Cafe"
+        unit: "#02-18"
+      - name: "My Briyani House"
+        unit: "#03-01"
+      - name: "The Coffee Bean & Tea Leaf"
+        unit: "#01-06"
+      - name: "Pizza Hut"
+        unit: "#01-34 (126C Tengah Dr)"
+      - name: "Subway"
+        unit: "#01-335 (126B Tengah Dr)"
+    "Parc Point":
+      - name: "Saizeriya"
+        unit: "#02-05"
+      - name: "Labula Mala Sichuan Restaurant"
+        unit: "#02-04"
+    "Tengah Community Club":
+      - name: "Prata Lahhh!"
+        unit: "#01-02"
+      - name: "Burger King"
+        unit: "#01-03"
